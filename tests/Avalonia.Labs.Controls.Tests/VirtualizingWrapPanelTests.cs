@@ -776,14 +776,21 @@ public class VirtualizingWrapPanelTests
         var itemsControl = new ItemsControl
         {
             Width = 100,
-            Height = 100,
             Padding = new Thickness(0),
             ItemsPanel = new FuncTemplate<Panel?>(() => target),
             ItemsSource = Enumerable.Range(0, items.Count).ToList(),
             ItemTemplate = new FuncDataTemplate<int>((i, _) => new Canvas { Width = items[i].Width, Height = items[i].Height }, true)
         };
 
-        var window = new Window { Content = itemsControl };
+        var scrollViewer = new ScrollViewer
+        {
+            Width = 100,
+            Height = 100,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+            Content = itemsControl
+        };
+        var window = new Window { Content = scrollViewer };
         window.Show();
         window.UpdateLayout();
 
@@ -795,11 +802,15 @@ public class VirtualizingWrapPanelTests
         var next = target.GetControl(NavigationDirection.Down, container1, false);
         Assert.NotNull(next);
         Assert.Equal(3, target.LastNavigationIndexPublic);
+        Assert.Equal(3, target.IndexFromContainer(Assert.IsAssignableFrom<Control>(next)));
+        Assert.Equal(0, scrollViewer.Offset.Y);
 
         // 2. Down to Row 2 (Item 5). This row was offscreen.
-        next = target.GetControl(NavigationDirection.Down, (IInputElement)next!, false);
+        next = target.GetControl(NavigationDirection.Down, next, false);
         Assert.NotNull(next);
         Assert.Equal(5, target.LastNavigationIndexPublic);
+        Assert.Equal(5, target.IndexFromContainer(Assert.IsAssignableFrom<Control>(next)));
+        Assert.True(scrollViewer.Offset.Y > 0);
     }
 
     [AvaloniaFact]
